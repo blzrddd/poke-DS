@@ -70,20 +70,20 @@ main{position:relative;min-height:0}
 #hint{position:absolute;top:16px;left:50%;transform:translateX(-50%);z-index:500;background:rgba(36,21,28,.85);padding:8px 16px;border-radius:999px;font-size:.85rem;color:var(--muted);white-space:nowrap}
 .heart-pin{font-size:26px;line-height:1;filter:drop-shadow(0 2px 4px rgba(0,0,0,.6))}
 
-/* ---------- Film final ---------- */
-#film{position:fixed;inset:0;z-index:3000;background:#000}
-#filmMap{position:absolute;inset:0}
-#filmCaption{position:absolute;left:0;right:0;bottom:0;z-index:600;padding:40px 24px 48px;text-align:center;
-  background:linear-gradient(transparent,rgba(0,0,0,.85));pointer-events:none}
-#filmCaption .t{font-family:"Fraunces",serif;font-size:clamp(1.6rem,5vw,2.8rem);transition:opacity .8s}
-#filmCaption .s{color:#e8c9d4;margin-top:6px;transition:opacity .8s}
-#filmEnd{position:absolute;inset:0;z-index:700;display:grid;place-items:center;text-align:center;padding:24px;
-  background:radial-gradient(ellipse at center,rgba(74,31,51,.92),rgba(0,0,0,.96));opacity:0;pointer-events:none;transition:opacity 1.6s}
-#filmEnd.show{opacity:1;pointer-events:auto}
-#filmEnd h1{font-size:clamp(2rem,7vw,3.8rem);margin:.3em 0}
-#filmEnd p{color:var(--muted);max-width:32em;line-height:1.7;margin:0 auto 1.4em;white-space:pre-line}
-#filmEnd video{max-width:min(720px,100%);max-height:55vh;border-radius:14px;margin-bottom:18px}
-#closeFilm{position:absolute;top:14px;right:14px;z-index:800;background:rgba(0,0,0,.5);color:#fff;width:40px;height:40px;border-radius:50%;font-size:1.2rem}
+/* ---------- Surprise : galerie ---------- */
+#gift{position:fixed;inset:0;z-index:3000;background:radial-gradient(ellipse at 50% 0%,#4a1f33 0%,var(--bg) 60%);overflow-y:auto;overflow-x:hidden;-webkit-overflow-scrolling:touch}
+#gift .wrap{max-width:980px;margin:0 auto;padding:56px 16px 64px;text-align:center}
+#gift h1{font-size:clamp(2rem,7vw,3.4rem);margin:.2em 0 .3em}
+#gift .msg{color:var(--muted);max-width:32em;margin:0 auto 10px;line-height:1.7;white-space:pre-line}
+#gift .tip{font-size:.85rem;color:var(--gold);margin:14px auto 26px}
+.shot{background:var(--panel2);border:1px solid var(--line);border-radius:18px;padding:12px;display:flex;flex-direction:column;gap:12px}
+.shot .ph{aspect-ratio:4/5;border-radius:12px;background:#120a0e;display:grid;place-items:center;color:var(--muted);font-size:.85rem;overflow:hidden}
+.shot.tall .ph{aspect-ratio:9/16}
+.shot img{width:100%;height:100%;object-fit:cover;display:block;-webkit-touch-callout:default}
+.shot .btn{padding:11px 18px;font-size:.9rem}
+#collage{max-width:420px;margin:0 auto 34px}
+#grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:16px;text-align:left}
+#closeGift{position:fixed;top:14px;right:14px;z-index:3100;background:rgba(0,0,0,.5);color:#fff;width:40px;height:40px;border-radius:50%;font-size:1.2rem}
 .floaty{position:absolute;bottom:-40px;z-index:650;pointer-events:none;animation:rise linear forwards}
 @keyframes rise{to{transform:translateY(-110vh) rotate(25deg);opacity:0}}
 
@@ -123,7 +123,7 @@ main{position:relative;min-height:0}
       <div id="progress"></div>
     </header>
     <div id="list"></div>
-    <div id="unlock">🔒 Trouve tous les cœurs pour débloquer la vidéo.</div>
+    <div id="unlock"></div>
   </aside>
   <main>
     <div id="map"></div>
@@ -139,19 +139,15 @@ main{position:relative;min-height:0}
   </main>
 </div>
 
-<section id="film" class="hidden">
-  <div id="filmMap"></div>
-  <div id="filmCaption"><div class="t" id="filmT"></div><div class="s" id="filmS"></div></div>
-  <div id="filmEnd">
-    <div>
-      <div id="filmVideoWrap"></div>
-      <div class="big-heart">❤️</div>
-      <h1 id="endTitle"></h1>
-      <p id="endText"></p>
-      <button class="btn ghost" id="replayBtn">Revoir</button>
-    </div>
+<section id="gift" class="hidden">
+  <div class="wrap">
+    <h1 id="giftTitle"></h1>
+    <p class="msg" id="giftMsg"></p>
+    <p class="tip">📲 Appuie sur « Enregistrer » (ou reste appuyée sur une image) pour la garder dans tes photos.</p>
+    <div id="collage" class="shot tall"><div class="ph">Préparation…</div><button class="btn" disabled>Enregistrer</button></div>
+    <div id="grid"></div>
   </div>
-  <button id="closeFilm" aria-label="Fermer">✕</button>
+  <button id="closeGift" aria-label="Fermer">✕</button>
 </section>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
@@ -160,26 +156,23 @@ main{position:relative;min-height:0}
    CONFIG — change ce que tu veux ici
    ============================================================ */
 const CONFIG = {
-  prenom: "mon cœur",                 // ex: "Léa"
+  titreFin: "Tous les cœurs de la Terre",
   messageFin: "Il y a des cœurs partout sur cette planète.\nMais le seul qui compte vraiment pour moi, c'est le tien.",
-  signature: "— Moi",
-  // Optionnel : ta propre vidéo (ex: "nous.mp4" posé à côté de ce fichier).
-  // Si vide, la « vidéo » est un survol animé de tous les cœurs.
-  videoPerso: ""
+  signature: "— Moi"
 };
 
-/* Les lieux : de vrais cœurs visibles sur Terre, vus du ciel. */
+/* Les lieux : de vrais cœurs visibles sur Terre, vus du ciel.
+   Si un cœur est mal centré, corrige lat / lng (Google Maps → appui long → coordonnées).
+   z = niveau de zoom (plus grand = plus près). */
 const PLACES = [
   { name:"Galešnjak", where:"Croatie · mer Adriatique", lat:43.97842, lng:15.38325, z:16,
     text:"L'île en forme de cœur. Inhabitée, minuscule, et repérée par hasard sur Google Earth." },
   { name:"Le Cœur de Voh", where:"Nouvelle-Calédonie", lat:-20.93753, lng:164.65841, z:17,
     text:"Une clairière dessinée par la mangrove elle-même. Rendue célèbre par Yann Arthus-Bertrand." },
-  { name:"Heart Reef", where:"Grande Barrière de corail, Australie", lat:-19.77799, lng:149.24866, z:17,
-    text:"Un récif de corail en cœur, au milieu de l'océan. Personne n'a le droit d'y nager : on ne le voit que du ciel." },
-  { name:"Tupai", where:"Polynésie française", lat:-16.2667, lng:-151.8167, z:13,
-    text:"Un atoll entier en forme de cœur, à 20 km au nord de Bora Bora." },
-  { name:"Tavarua", where:"Fidji", lat:-17.8580, lng:177.2010, z:16,
-    text:"Une petite île-cœur entourée de lagon turquoise." },
+  { name:"Isla Corazón", where:"Lac Mascardi · Patagonie, Argentine", lat:-41.30812, lng:-71.57730, z:16,
+    text:"Une île couverte de forêt, posée en forme de cœur au milieu d'un lac de Patagonie." },
+  { name:"Love Lake", where:"Désert d'Al Qudra · Dubaï", lat:24.83665, lng:55.40410, z:15,
+    text:"Deux cœurs entrelacés, creusés au milieu du désert." },
   { name:"Lough Ouler", where:"Wicklow, Irlande", lat:53.06057, lng:-6.37326, z:16,
     text:"Le « lac du cœur », caché dans les montagnes irlandaises." },
   { name:"Trnovačko jezero", where:"Monténégro / Bosnie", lat:43.25181, lng:18.72625, z:16,
@@ -190,11 +183,11 @@ const PLACES = [
 const TILE_URL = "https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}";
 const TILE_OPTS = { maxZoom:19, maxNativeZoom:18, attribution:"Imagerie © Esri, Maxar, Earthstar Geographics" };
 const store = {
-  get(){ try{ return JSON.parse(localStorage.getItem("coeurs-found")||"[]"); }catch(e){ return []; } },
-  set(v){ try{ localStorage.setItem("coeurs-found", JSON.stringify(v)); }catch(e){} }
+  get(){ try{ return JSON.parse(localStorage.getItem("coeurs-found-v2")||"[]"); }catch(e){ return []; } },
+  set(v){ try{ localStorage.setItem("coeurs-found-v2", JSON.stringify(v)); }catch(e){} }
 };
 const found = new Set(store.get());
-let current = null, map, film;
+let current = null, map, giftBuilt = false;
 
 const $ = id => document.getElementById(id);
 const dms = (v, pos, neg) => {
@@ -231,9 +224,9 @@ function render(){
   const all = found.size === PLACES.length;
   $("unlock").className = all ? "ready" : "";
   $("unlock").innerHTML = all
-    ? `<div class="serif" style="font-size:1.15rem">Tous les cœurs sont trouvés ✨</div><button class="btn" id="filmBtn">▶ Voir la vidéo</button>`
-    : `🔒 Encore ${PLACES.length-found.size} cœur${PLACES.length-found.size>1?"s":""} à trouver pour débloquer la vidéo.`;
-  if(all) $("filmBtn").onclick = playFilm;
+    ? `<div class="serif" style="font-size:1.15rem">Tous les cœurs sont trouvés ✨</div><button class="btn" id="giftBtn">🎁 Ouvrir ta surprise</button>`
+    : `🔒 Encore ${PLACES.length-found.size} cœur${PLACES.length-found.size>1?"s":""} à trouver pour ouvrir ta surprise.`;
+  if(all) $("giftBtn").onclick = openGift;
 }
 
 function go(i){
@@ -267,55 +260,100 @@ $("foundBtn").onclick = () => {
   else if (next === -1) map.flyTo([5, 40], 2, { duration: 3 });
 };
 
-/* ---------------- Le film final ---------------- */
-let filmRun = 0;
-function playFilm(){
-  const run = ++filmRun;
-  $("film").classList.remove("hidden");
-  $("filmEnd").classList.remove("show");
-  $("filmVideoWrap").innerHTML = "";
-  if (!film){
-    film = L.map("filmMap", { zoomControl:false, attributionControl:true, dragging:false, scrollWheelZoom:false,
-      doubleClickZoom:false, touchZoom:false, keyboard:false }).setView([20,10], 2);
-    L.tileLayer(TILE_URL, TILE_OPTS).addTo(film);
-  } else film.setView([20,10], 2, { animate:false });
-  setTimeout(()=>film.invalidateSize(), 50);
+/* ---------------- La surprise : photos à enregistrer ---------------- */
+const TILE_SRC = (z,x,y) => `https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/${z}/${y}/${x}`;
+const loadImg = src => new Promise((ok, ko) => { const i = new Image(); i.crossOrigin = "anonymous"; i.onload = () => ok(i); i.onerror = ko; i.src = src; });
 
-  const caption = (t,s) => { $("filmT").textContent = t; $("filmS").textContent = s; };
-  const wait = ms => new Promise(r => setTimeout(r, ms));
-  const fly = (ll, z, d) => new Promise(r => { film.flyTo(ll, z, { duration:d }); film.once("moveend", r); });
-
-  (async () => {
-    caption("Tous les cœurs de la Terre", "pour " + CONFIG.prenom);
-    await wait(2500);
-    for (let k = 0; k < PLACES.length; k++){
-      if (run !== filmRun) return;
-      const p = PLACES[k];
-      caption("", "");
-      await fly([p.lat, p.lng], p.z, 5);
-      if (run !== filmRun) return;
-      L.marker([p.lat, p.lng], { icon: heartIcon }).addTo(film);
-      caption(p.name, p.where);
-      burst($("film"), 6);
-      await wait(3200);
-      await fly([p.lat, p.lng], Math.max(p.z - 5, 4), 2);
-    }
-    if (run !== filmRun) return;
-    caption("", "");
-    await fly([10, 60], 2, 4);
-    await wait(800);
-    if (run !== filmRun) return;
-    $("endTitle").textContent = (PLACES.length + 1) + " cœurs";
-    $("endText").textContent = CONFIG.messageFin + "\n\n" + CONFIG.signature;
-    if (CONFIG.videoPerso){
-      $("filmVideoWrap").innerHTML = `<video src="${CONFIG.videoPerso}" controls autoplay playsinline></video>`;
-    }
-    $("filmEnd").classList.add("show");
-    burst($("film"), 30);
-  })();
+/* Dessine une vue satellite carrée (size px) centrée sur lat/lng, à partir des tuiles. */
+async function satSquare(lat, lng, z, size){
+  const n = 2 ** z, T = 256;
+  const wx = (lng + 180) / 360 * n * T;
+  const r = lat * Math.PI / 180;
+  const wy = (1 - Math.log(Math.tan(r) + 1 / Math.cos(r)) / Math.PI) / 2 * n * T;
+  const x0 = wx - size / 2, y0 = wy - size / 2;
+  const c = document.createElement("canvas"); c.width = c.height = size;
+  const g = c.getContext("2d"); g.fillStyle = "#0b0a10"; g.fillRect(0, 0, size, size);
+  const jobs = [];
+  for (let tx = Math.floor(x0 / T); tx <= Math.floor((x0 + size) / T); tx++)
+    for (let ty = Math.floor(y0 / T); ty <= Math.floor((y0 + size) / T); ty++)
+      jobs.push(loadImg(TILE_SRC(z, ((tx % n) + n) % n, ty)).then(im => g.drawImage(im, tx * T - x0, ty * T - y0)).catch(() => {}));
+  await Promise.all(jobs);
+  return c;
 }
-$("replayBtn").onclick = playFilm;
-$("closeFilm").onclick = () => { filmRun++; $("film").classList.add("hidden"); };
+
+function rr(g, x, y, w, h, r){ g.beginPath(); g.moveTo(x+r,y); g.arcTo(x+w,y,x+w,y+h,r); g.arcTo(x+w,y+h,x,y+h,r); g.arcTo(x,y+h,x,y,r); g.arcTo(x,y,x+w,y,r); g.closePath(); }
+
+/* Photo d'un lieu : 1080 x 1350 */
+async function placeCard(p){
+  const sat = await satSquare(p.lat, p.lng, Math.min(p.z + 1, 18), 1080);
+  const c = document.createElement("canvas"); c.width = 1080; c.height = 1350;
+  const g = c.getContext("2d");
+  g.fillStyle = "#1a0f14"; g.fillRect(0, 0, 1080, 1350);
+  g.drawImage(sat, 0, 0);
+  const grd = g.createLinearGradient(0, 900, 0, 1080); grd.addColorStop(0, "rgba(26,15,20,0)"); grd.addColorStop(1, "rgba(26,15,20,1)");
+  g.fillStyle = grd; g.fillRect(0, 900, 1080, 180);
+  g.textAlign = "center";
+  g.fillStyle = "#fbeef2"; g.font = "600 76px Fraunces, Georgia, serif"; g.fillText(p.name, 540, 1170);
+  g.fillStyle = "#c7a3b2"; g.font = "500 38px 'DM Sans', sans-serif"; g.fillText(p.where, 540, 1230);
+  g.fillStyle = "#ffd08a"; g.font = "32px ui-monospace, Menlo, monospace"; g.fillText(coordStr(p), 540, 1290);
+  return c;
+}
+
+/* Fond d'écran récap : 1080 x 1920 */
+function collageCard(cards){
+  const c = document.createElement("canvas"); c.width = 1080; c.height = 1920;
+  const g = c.getContext("2d");
+  const bg = g.createRadialGradient(540, 0, 50, 540, 300, 1400); bg.addColorStop(0, "#4a1f33"); bg.addColorStop(1, "#1a0f14");
+  g.fillStyle = bg; g.fillRect(0, 0, 1080, 1920);
+  g.textAlign = "center"; g.fillStyle = "#fbeef2"; g.font = "600 84px Fraunces, Georgia, serif";
+  g.fillText(CONFIG.titreFin, 540, 200, 980);
+  const cols = 2, gap = 40, m = 100, w = (1080 - m*2 - gap) / cols, h = w;
+  cards.forEach((cv, i) => {
+    const x = m + (i % cols) * (w + gap), y = 270 + Math.floor(i / cols) * (h + 100);
+    g.save(); rr(g, x, y, w, h, 28); g.clip(); g.drawImage(cv, 0, 0, 1080, 1080, x, y, w, h); g.restore();
+    g.fillStyle = "#fbeef2"; g.font = "600 40px Fraunces, Georgia, serif"; g.fillText(PLACES[i].name, x + w/2, y + h + 52, w);
+  });
+  g.fillStyle = "#ff8fab"; g.font = "italic 44px Fraunces, Georgia, serif"; g.fillText(CONFIG.signature, 540, 1860);
+  return c;
+}
+
+async function saveCanvas(canvas, name){
+  const blob = await new Promise(r => canvas.toBlob(r, "image/jpeg", 0.92));
+  const file = new File([blob], name + ".jpg", { type: "image/jpeg" });
+  if (navigator.canShare && navigator.canShare({ files: [file] })){
+    try { await navigator.share({ files: [file] }); return; } catch(e){ if (e.name === "AbortError") return; }
+  }
+  const a = document.createElement("a"); a.href = URL.createObjectURL(blob); a.download = file.name;
+  document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(a.href), 4000);
+}
+
+function fillShot(el, canvas, name){
+  let url;
+  try { url = canvas.toDataURL("image/jpeg", 0.9); }
+  catch(e){ el.querySelector(".ph").textContent = "Image indisponible (ouvre la page dans Safari ou Chrome)"; return; }
+  el.querySelector(".ph").innerHTML = `<img alt="${name}" src="${url}">`;
+  const b = el.querySelector("button"); b.disabled = false; b.onclick = () => saveCanvas(canvas, name);
+}
+
+async function openGift(){
+  $("gift").classList.remove("hidden");
+  document.body.style.overflow = "hidden";
+  burst($("gift"), 30);
+  if (giftBuilt) return;
+  giftBuilt = true;
+  $("giftTitle").textContent = CONFIG.titreFin;
+  $("giftMsg").textContent = CONFIG.messageFin + "\n\n" + CONFIG.signature;
+  $("grid").innerHTML = PLACES.map((p,i) => `<div class="shot" id="shot${i}"><div class="ph">Préparation…</div><button class="btn" disabled>Enregistrer</button></div>`).join("");
+  try { await document.fonts.ready; } catch(e){}
+  const cards = [];
+  for (let i = 0; i < PLACES.length; i++){
+    const c = await placeCard(PLACES[i]);
+    cards.push(c);
+    fillShot($("shot" + i), c, "coeur-" + (i+1) + "-" + PLACES[i].name);
+  }
+  fillShot($("collage"), collageCard(cards), "tous-les-coeurs");
+}
+$("closeGift").onclick = () => { $("gift").classList.add("hidden"); document.body.style.overflow = ""; };
 
 function burst(container, n){
   for (let k = 0; k < n; k++){
