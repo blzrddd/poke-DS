@@ -1,0 +1,329 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Les cœurs de la Terre</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,wght@0,400;0,600;1,400&family=DM+Sans:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+/* ===================== À PERSONNALISER ===================== */
+/* (voir aussi le bloc CONFIG dans le <script> en bas du fichier) */
+/* =========================================================== */
+:root{
+  --bg:#1a0f14; --panel:#24151c; --panel2:#2f1b25; --ink:#fbeef2; --muted:#c7a3b2;
+  --rose:#ff5a87; --rose2:#ff8fab; --gold:#ffd08a; --line:#4a2b39;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%}
+body{background:var(--bg);color:var(--ink);font-family:"DM Sans",system-ui,sans-serif;overflow-x:hidden}
+h1,h2,.serif{font-family:"Fraunces",Georgia,serif;font-weight:600}
+button{font:inherit;cursor:pointer;border:0}
+.hidden{display:none!important}
+
+/* ---------- Intro ---------- */
+#intro{position:fixed;inset:0;display:grid;place-items:center;text-align:center;padding:24px;z-index:3000;
+  background:radial-gradient(ellipse at 50% 30%,#4a1f33 0%,var(--bg) 70%)}
+#intro h1{font-size:clamp(2rem,7vw,3.6rem);line-height:1.1;margin:.4em 0}
+#intro p{color:var(--muted);max-width:30em;margin:0 auto 1.6em;line-height:1.6}
+.big-heart{font-size:4rem;animation:beat 1.4s infinite}
+@keyframes beat{0%,100%{transform:scale(1)}15%{transform:scale(1.18)}30%{transform:scale(1)}45%{transform:scale(1.12)}}
+.btn{background:var(--rose);color:#fff;padding:14px 28px;border-radius:999px;font-weight:700;letter-spacing:.02em;
+  box-shadow:0 8px 24px -8px var(--rose);transition:transform .15s}
+.btn:hover{transform:translateY(-2px)}
+.btn.ghost{background:transparent;border:1.5px solid var(--rose2);color:var(--rose2);box-shadow:none}
+
+/* ---------- Layout ---------- */
+#app{display:grid;grid-template-columns:380px 1fr;height:100vh}
+aside{background:var(--panel);border-right:1px solid var(--line);display:flex;flex-direction:column;min-height:0}
+header{padding:20px 20px 14px;border-bottom:1px solid var(--line)}
+header h2{font-size:1.4rem}
+header p{color:var(--muted);font-size:.9rem;margin-top:4px}
+#progress{display:flex;gap:6px;margin-top:12px;font-size:1.3rem}
+#progress span{opacity:.25;transition:opacity .4s,transform .4s}
+#progress span.on{opacity:1;transform:scale(1.15)}
+#list{overflow-y:auto;padding:14px;display:flex;flex-direction:column;gap:10px;flex:1}
+.card{background:var(--panel2);border:1px solid var(--line);border-radius:14px;padding:14px 16px;display:flex;align-items:center;gap:12px;transition:border-color .3s}
+.card.active{border-color:var(--rose)}
+.card.found{border-color:#6b3a50}
+.card .num{width:34px;height:34px;flex:none;border-radius:50%;display:grid;place-items:center;background:var(--bg);color:var(--muted);font-weight:700}
+.card.found .num{background:var(--rose);color:#fff}
+.card .meta{flex:1;min-width:0}
+.card .coord{font-family:ui-monospace,Menlo,monospace;font-size:.82rem;color:var(--gold)}
+.card .name{font-size:.95rem;margin-top:3px}
+.card .name.mystery{color:var(--muted);font-style:italic}
+.card button{background:var(--rose);color:#fff;padding:8px 14px;border-radius:999px;font-weight:700;font-size:.85rem;flex:none}
+.card.found button{background:transparent;color:var(--rose2);border:1px solid var(--rose2)}
+#unlock{margin:14px;padding:16px;border-radius:14px;text-align:center;border:1px dashed var(--line);color:var(--muted);font-size:.9rem}
+#unlock.ready{border:1px solid var(--gold);color:var(--ink);background:linear-gradient(135deg,#3a1d2a,#2a1720)}
+#unlock.ready .btn{margin-top:10px;background:var(--gold);color:#3a1d2a;box-shadow:0 8px 24px -8px var(--gold)}
+
+/* ---------- Map ---------- */
+main{position:relative;min-height:0}
+#map{position:absolute;inset:0;background:#0b0a10}
+#reveal{position:absolute;left:50%;bottom:28px;transform:translateX(-50%);z-index:500;background:rgba(36,21,28,.94);
+  backdrop-filter:blur(6px);border:1px solid var(--line);border-radius:18px;padding:18px 22px;width:min(440px,calc(100% - 32px));text-align:center}
+#reveal h3{font-family:"Fraunces",serif;font-size:1.35rem}
+#reveal p{color:var(--muted);font-size:.9rem;margin:6px 0 14px;line-height:1.5}
+#reveal .row{display:flex;gap:10px;justify-content:center;flex-wrap:wrap}
+#hint{position:absolute;top:16px;left:50%;transform:translateX(-50%);z-index:500;background:rgba(36,21,28,.85);padding:8px 16px;border-radius:999px;font-size:.85rem;color:var(--muted);white-space:nowrap}
+.heart-pin{font-size:26px;line-height:1;filter:drop-shadow(0 2px 4px rgba(0,0,0,.6))}
+
+/* ---------- Film final ---------- */
+#film{position:fixed;inset:0;z-index:3000;background:#000}
+#filmMap{position:absolute;inset:0}
+#filmCaption{position:absolute;left:0;right:0;bottom:0;z-index:600;padding:40px 24px 48px;text-align:center;
+  background:linear-gradient(transparent,rgba(0,0,0,.85));pointer-events:none}
+#filmCaption .t{font-family:"Fraunces",serif;font-size:clamp(1.6rem,5vw,2.8rem);transition:opacity .8s}
+#filmCaption .s{color:#e8c9d4;margin-top:6px;transition:opacity .8s}
+#filmEnd{position:absolute;inset:0;z-index:700;display:grid;place-items:center;text-align:center;padding:24px;
+  background:radial-gradient(ellipse at center,rgba(74,31,51,.92),rgba(0,0,0,.96));opacity:0;pointer-events:none;transition:opacity 1.6s}
+#filmEnd.show{opacity:1;pointer-events:auto}
+#filmEnd h1{font-size:clamp(2rem,7vw,3.8rem);margin:.3em 0}
+#filmEnd p{color:var(--muted);max-width:32em;line-height:1.7;margin:0 auto 1.4em;white-space:pre-line}
+#filmEnd video{max-width:min(720px,100%);max-height:55vh;border-radius:14px;margin-bottom:18px}
+#closeFilm{position:absolute;top:14px;right:14px;z-index:800;background:rgba(0,0,0,.5);color:#fff;width:40px;height:40px;border-radius:50%;font-size:1.2rem}
+.floaty{position:absolute;bottom:-40px;z-index:650;pointer-events:none;animation:rise linear forwards}
+@keyframes rise{to{transform:translateY(-110vh) rotate(25deg);opacity:0}}
+
+/* ---------- Mobile ---------- */
+@media (max-width:820px){
+  #app{grid-template-columns:1fr;grid-template-rows:46vh 1fr;height:100dvh}
+  main{order:-1}
+  aside{border-right:0;border-top:1px solid var(--line)}
+  header{padding:14px 16px 10px}
+  #list{padding:12px 16px}
+  #reveal{bottom:12px;padding:14px 16px}
+  #reveal p{display:none}
+}
+</style>
+</head>
+<body>
+
+<section id="intro">
+  <div>
+    <div class="big-heart">❤️</div>
+    <h1 id="introTitle">Pour toi</h1>
+    <p>La Terre cache des cœurs. Des vrais, qu'on ne voit que d'en haut.<br>
+       Je t'ai noté leurs coordonnées. Va les voir un par un… et quand tu les auras tous trouvés, une surprise s'ouvre.</p>
+    <button class="btn" id="startBtn">Commencer le voyage</button>
+  </div>
+</section>
+
+<div id="app" class="hidden">
+  <aside>
+    <header>
+      <h2>Les cœurs de la Terre</h2>
+      <p>Clique sur « Voir » pour t'envoler vers chaque coordonnée.</p>
+      <div id="progress"></div>
+    </header>
+    <div id="list"></div>
+    <div id="unlock">🔒 Trouve tous les cœurs pour débloquer la vidéo.</div>
+  </aside>
+  <main>
+    <div id="map"></div>
+    <div id="hint">Choisis une coordonnée à gauche ✈️</div>
+    <div id="reveal" class="hidden">
+      <h3 id="revealTitle"></h3>
+      <p id="revealText"></p>
+      <div class="row">
+        <button class="btn" id="foundBtn">Je le vois ❤️</button>
+      </div>
+    </div>
+  </main>
+</div>
+
+<section id="film" class="hidden">
+  <div id="filmMap"></div>
+  <div id="filmCaption"><div class="t" id="filmT"></div><div class="s" id="filmS"></div></div>
+  <div id="filmEnd">
+    <div>
+      <div id="filmVideoWrap"></div>
+      <div class="big-heart">❤️</div>
+      <h1 id="endTitle"></h1>
+      <p id="endText"></p>
+      <button class="btn ghost" id="replayBtn">Revoir</button>
+    </div>
+  </div>
+  <button id="closeFilm" aria-label="Fermer">✕</button>
+</section>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+<script>
+/* ============================================================
+   CONFIG — change ce que tu veux ici
+   ============================================================ */
+const CONFIG = {
+  prenom: "mon cœur",                 // ex: "Léa"
+  messageFin: "Il y a des cœurs partout sur cette planète.\nMais le seul qui compte vraiment pour moi, c'est le tien.",
+  signature: "— Moi",
+  // Optionnel : ta propre vidéo (ex: "nous.mp4" posé à côté de ce fichier).
+  // Si vide, la « vidéo » est un survol animé de tous les cœurs.
+  videoPerso: ""
+};
+
+/* Les lieux : de vrais cœurs visibles sur Terre, vus du ciel. */
+const PLACES = [
+  { name:"Galešnjak", where:"Croatie · mer Adriatique", lat:43.97842, lng:15.38325, z:16,
+    text:"L'île en forme de cœur. Inhabitée, minuscule, et repérée par hasard sur Google Earth." },
+  { name:"Le Cœur de Voh", where:"Nouvelle-Calédonie", lat:-20.93753, lng:164.65841, z:17,
+    text:"Une clairière dessinée par la mangrove elle-même. Rendue célèbre par Yann Arthus-Bertrand." },
+  { name:"Heart Reef", where:"Grande Barrière de corail, Australie", lat:-19.77799, lng:149.24866, z:17,
+    text:"Un récif de corail en cœur, au milieu de l'océan. Personne n'a le droit d'y nager : on ne le voit que du ciel." },
+  { name:"Tupai", where:"Polynésie française", lat:-16.2667, lng:-151.8167, z:13,
+    text:"Un atoll entier en forme de cœur, à 20 km au nord de Bora Bora." },
+  { name:"Tavarua", where:"Fidji", lat:-17.8580, lng:177.2010, z:16,
+    text:"Une petite île-cœur entourée de lagon turquoise." },
+  { name:"Lough Ouler", where:"Wicklow, Irlande", lat:53.06057, lng:-6.37326, z:16,
+    text:"Le « lac du cœur », caché dans les montagnes irlandaises." },
+  { name:"Trnovačko jezero", where:"Monténégro / Bosnie", lat:43.25181, lng:18.72625, z:16,
+    text:"Un lac glaciaire en cœur, perché à 1 500 m d'altitude." }
+];
+/* ============================================================ */
+
+const TILE_URL = "https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}";
+const TILE_OPTS = { maxZoom:19, maxNativeZoom:18, attribution:"Imagerie © Esri, Maxar, Earthstar Geographics" };
+const store = {
+  get(){ try{ return JSON.parse(localStorage.getItem("coeurs-found")||"[]"); }catch(e){ return []; } },
+  set(v){ try{ localStorage.setItem("coeurs-found", JSON.stringify(v)); }catch(e){} }
+};
+const found = new Set(store.get());
+let current = null, map, film;
+
+const $ = id => document.getElementById(id);
+const dms = (v, pos, neg) => {
+  const a = Math.abs(v), d = Math.floor(a), mf = (a-d)*60, m = Math.floor(mf), s = ((mf-m)*60).toFixed(1);
+  return `${d}°${String(m).padStart(2,"0")}'${String(s).padStart(4,"0")}"${v>=0?pos:neg}`;
+};
+const coordStr = p => `${dms(p.lat,"N","S")}  ${dms(p.lng,"E","O")}`;
+const heartIcon = L.divIcon({ className:"", html:'<div class="heart-pin">❤️</div>', iconSize:[26,26], iconAnchor:[13,13] });
+
+$("introTitle").textContent = "Pour " + CONFIG.prenom;
+$("startBtn").onclick = () => {
+  $("intro").classList.add("hidden");
+  $("app").classList.remove("hidden");
+  initMap(); render();
+};
+
+function initMap(){
+  map = L.map("map", { worldCopyJump:true, zoomControl:true }).setView([20, 10], 2);
+  L.tileLayer(TILE_URL, TILE_OPTS).addTo(map);
+}
+
+function render(){
+  $("progress").innerHTML = PLACES.map((_,i)=>`<span class="${found.has(i)?"on":""}">❤️</span>`).join("");
+  $("list").innerHTML = PLACES.map((p,i)=>`
+    <div class="card ${found.has(i)?"found":""} ${current===i?"active":""}">
+      <div class="num">${found.has(i)?"❤":i+1}</div>
+      <div class="meta">
+        <div class="coord">${coordStr(p)}</div>
+        <div class="name ${found.has(i)?"":"mystery"}">${found.has(i)? p.name+" · "+p.where : "Lieu mystère…"}</div>
+      </div>
+      <button data-i="${i}">${found.has(i)?"Revoir":"Voir"}</button>
+    </div>`).join("");
+  $("list").querySelectorAll("button").forEach(b => b.onclick = () => go(+b.dataset.i));
+
+  const all = found.size === PLACES.length;
+  $("unlock").className = all ? "ready" : "";
+  $("unlock").innerHTML = all
+    ? `<div class="serif" style="font-size:1.15rem">Tous les cœurs sont trouvés ✨</div><button class="btn" id="filmBtn">▶ Voir la vidéo</button>`
+    : `🔒 Encore ${PLACES.length-found.size} cœur${PLACES.length-found.size>1?"s":""} à trouver pour débloquer la vidéo.`;
+  if(all) $("filmBtn").onclick = playFilm;
+}
+
+function go(i){
+  current = i;
+  const p = PLACES[i];
+  $("hint").classList.add("hidden");
+  $("reveal").classList.add("hidden");
+  render();
+  if (window.matchMedia("(max-width:820px)").matches) window.scrollTo({top:0, behavior:"smooth"});
+  map.flyTo([p.lat, p.lng], p.z, { duration: 4.5 });
+  map.once("moveend", () => {
+    if (current !== i) return;
+    $("revealTitle").textContent = `${p.name} — ${p.where}`;
+    $("revealText").textContent = p.text;
+    $("foundBtn").textContent = found.has(i) ? "Suivant →" : "Je le vois ❤️";
+    $("reveal").classList.remove("hidden");
+  });
+}
+
+$("foundBtn").onclick = () => {
+  if (current === null) return;
+  const wasNew = !found.has(current);
+  found.add(current); store.set([...found]);
+  L.marker([PLACES[current].lat, PLACES[current].lng], { icon: heartIcon }).addTo(map);
+  if (wasNew) burst(document.querySelector("main"), 14);
+  $("reveal").classList.add("hidden");
+  render();
+  const next = PLACES.findIndex((_,i)=>!found.has(i));
+  if (next !== -1 && wasNew) setTimeout(() => go(next), 900);
+  else if (next === -1) map.flyTo([5, 40], 2, { duration: 3 });
+};
+
+/* ---------------- Le film final ---------------- */
+let filmRun = 0;
+function playFilm(){
+  const run = ++filmRun;
+  $("film").classList.remove("hidden");
+  $("filmEnd").classList.remove("show");
+  $("filmVideoWrap").innerHTML = "";
+  if (!film){
+    film = L.map("filmMap", { zoomControl:false, attributionControl:true, dragging:false, scrollWheelZoom:false,
+      doubleClickZoom:false, touchZoom:false, keyboard:false }).setView([20,10], 2);
+    L.tileLayer(TILE_URL, TILE_OPTS).addTo(film);
+  } else film.setView([20,10], 2, { animate:false });
+  setTimeout(()=>film.invalidateSize(), 50);
+
+  const caption = (t,s) => { $("filmT").textContent = t; $("filmS").textContent = s; };
+  const wait = ms => new Promise(r => setTimeout(r, ms));
+  const fly = (ll, z, d) => new Promise(r => { film.flyTo(ll, z, { duration:d }); film.once("moveend", r); });
+
+  (async () => {
+    caption("Tous les cœurs de la Terre", "pour " + CONFIG.prenom);
+    await wait(2500);
+    for (let k = 0; k < PLACES.length; k++){
+      if (run !== filmRun) return;
+      const p = PLACES[k];
+      caption("", "");
+      await fly([p.lat, p.lng], p.z, 5);
+      if (run !== filmRun) return;
+      L.marker([p.lat, p.lng], { icon: heartIcon }).addTo(film);
+      caption(p.name, p.where);
+      burst($("film"), 6);
+      await wait(3200);
+      await fly([p.lat, p.lng], Math.max(p.z - 5, 4), 2);
+    }
+    if (run !== filmRun) return;
+    caption("", "");
+    await fly([10, 60], 2, 4);
+    await wait(800);
+    if (run !== filmRun) return;
+    $("endTitle").textContent = (PLACES.length + 1) + " cœurs";
+    $("endText").textContent = CONFIG.messageFin + "\n\n" + CONFIG.signature;
+    if (CONFIG.videoPerso){
+      $("filmVideoWrap").innerHTML = `<video src="${CONFIG.videoPerso}" controls autoplay playsinline></video>`;
+    }
+    $("filmEnd").classList.add("show");
+    burst($("film"), 30);
+  })();
+}
+$("replayBtn").onclick = playFilm;
+$("closeFilm").onclick = () => { filmRun++; $("film").classList.add("hidden"); };
+
+function burst(container, n){
+  for (let k = 0; k < n; k++){
+    const h = document.createElement("div");
+    h.className = "floaty";
+    h.textContent = ["❤️","💗","💖","💕"][k % 4];
+    h.style.left = Math.random()*100 + "%";
+    h.style.fontSize = (16 + Math.random()*22) + "px";
+    h.style.animationDuration = (3 + Math.random()*3) + "s";
+    h.style.animationDelay = (Math.random()*1.2) + "s";
+    container.appendChild(h);
+    setTimeout(() => h.remove(), 8000);
+  }
+}
+</script>
+</body>
+</html>
