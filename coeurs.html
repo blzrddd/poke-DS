@@ -31,6 +31,7 @@ button{font:inherit;cursor:pointer;border:0}
 .btn{background:var(--rose);color:#fff;padding:14px 28px;border-radius:999px;font-weight:700;letter-spacing:.02em;
   box-shadow:0 8px 24px -8px var(--rose);transition:transform .15s}
 .btn:hover{transform:translateY(-2px)}
+.btn{display:inline-block;text-decoration:none}
 .btn.ghost{background:transparent;border:1.5px solid var(--rose2);color:var(--rose2);box-shadow:none}
 
 /* ---------- Layout ---------- */
@@ -88,12 +89,17 @@ main{position:relative;min-height:0}
 
 /* ---------- Mobile ---------- */
 @media (max-width:820px){
-  #app{grid-template-columns:1fr;grid-template-rows:46vh 1fr;height:100dvh}
-  main{order:-1}
+  #app{display:flex;flex-direction:column;height:auto}
+  main{order:-1;height:62vh;flex:none}
+  #list{overflow:visible}
   aside{border-right:0;border-top:1px solid var(--line)}
   header{padding:14px 16px 10px}
   #list{padding:12px 16px}
-  #reveal{bottom:12px;padding:14px 16px}
+  #reveal{bottom:10px;padding:10px 12px;border-radius:14px}
+  #reveal h3{font-size:1rem}
+  #reveal .row{margin-top:8px;gap:8px}
+  #reveal .btn{padding:9px 16px;font-size:.85rem}
+  .leaflet-control-attribution{font-size:9px}
   #reveal p{display:none}
 }
 </style>
@@ -127,6 +133,7 @@ main{position:relative;min-height:0}
       <p id="revealText"></p>
       <div class="row">
         <button class="btn" id="foundBtn">Je le vois ❤️</button>
+        <a class="btn ghost" id="gmapsBtn" target="_blank" rel="noopener">Ouvrir dans Maps</a>
       </div>
     </div>
   </main>
@@ -241,6 +248,7 @@ function go(i){
     if (current !== i) return;
     $("revealTitle").textContent = `${p.name} — ${p.where}`;
     $("revealText").textContent = p.text;
+    $("gmapsBtn").href = `https://www.google.com/maps/@${p.lat},${p.lng},${Math.round(35200000/2**(p.z-1))}m/data=!3m1!1e3`;
     $("foundBtn").textContent = found.has(i) ? "Suivant →" : "Je le vois ❤️";
     $("reveal").classList.remove("hidden");
   });
